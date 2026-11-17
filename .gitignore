@@ -8,3 +8,5 @@ android/
 ios/
 .vscode/*
 !.vscode/extensions.json
+.agent/
+

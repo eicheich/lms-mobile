@@ -8,176 +8,115 @@ import { useAuthStore } from '@/stores/auth'
 import { lmsService } from '@/services/lms.service'
 import type { ApiError } from '@/services/api'
 import type { Course } from '@/types/api.types'
-import { BookOpen, ChevronRight, Clock, Plus, Users, X } from 'lucide-vue-next'
+import { BookOpen, ChevronRight, Clock, Search, Users } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const courses = ref<Course[]>([])
+const search = ref('')
+const page = ref(1)
 const isLoading = ref(true)
 const isLocked = ref(false)
-const showCreateModal = ref(false)
 
-const newCourse = ref({
-  title: '',
-  code: '',
-  description: '',
-  schedule: ''
-})
-
-async function loadCourses() {
+async function loadCourses(resetPage = false) {
+  if (resetPage) page.value = 1
   isLoading.value = true
   isLocked.value = false
   try {
-    courses.value = await lmsService.getCourses()
+    const res = await lmsService.getCourses({
+      page: page.value,
+      limit: 20,
+      search: search.value,
+      mine: authStore.isTeacher ? true : undefined
+    })
+    courses.value = res.items
   } catch (err) {
     const apiErr = err as ApiError
-    if (apiErr.isModuleLocked) {
-      isLocked.value = true
-    }
+    if (apiErr.isModuleLocked) isLocked.value = true
   } finally {
     isLoading.value = false
   }
 }
 
-async function handleCreateCourse() {
-  if (!newCourse.value.title.trim()) return
-  const created = await lmsService.createCourse({
-    ...newCourse.value,
-    teacherName: authStore.user?.fullName
-  })
-  courses.value.unshift(created)
-  newCourse.value = { title: '', code: '', description: '', schedule: '' }
-  showCreateModal.value = false
-}
-
-onMounted(loadCourses)
+onMounted(() => loadCourses(true))
 </script>
 
 <template>
   <MobileShell>
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-lg font-extrabold text-slate-900">
-            {{ authStore.canManageCourses ? 'Manajemen Kursus' : 'Mata Pelajaran Saya' }}
-          </h1>
-          <p class="text-xs text-slate-500">Materi pembelajaran & pengumpulan tugas</p>
-        </div>
-
-        <button
-          v-if="authStore.canManageCourses && !isLocked"
-          type="button"
-          class="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-sm"
-          @click="showCreateModal = true"
-        >
-          <Plus class="h-4 w-4" />
-          <span>Kursus</span>
-        </button>
+    <div class="space-y-3">
+      <div>
+        <h1 class="text-[15px] font-bold text-slate-900">
+          {{ authStore.isTeacher ? 'Mata Pelajaran Saya' : 'Mata Pelajaran (LMS)' }}
+        </h1>
+        <p class="text-[11px] text-slate-600">
+          {{
+            authStore.isTeacher
+              ? 'Cek materi, tugas, dan nilai pengumpulan siswa'
+              : 'Materi pembelajaran & pengumpulan tugas harian'
+          }}
+        </p>
       </div>
 
       <LockedModuleState v-if="isLocked" module-name="LMS & Pembelajaran" />
 
-      <div v-else-if="isLoading" class="space-y-3">
-        <div v-for="i in 3" :key="i" class="h-24 animate-pulse rounded-2xl bg-slate-200" />
-      </div>
-
-      <EmptyState
-        v-else-if="courses.length === 0"
-        title="Belum Ada Kursus"
-        subtitle="Daftar mata pelajaran akan muncul di sini."
-      />
-
-      <div v-else class="space-y-3">
-        <div
-          v-for="course in courses"
-          :key="course.id"
-          class="touch-card cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          @click="router.push(`/lms/${course.id}`)"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <span
-                class="inline-block rounded-md bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary"
-              >
-                {{ course.code || 'COURSE' }}
-              </span>
-              <h2 class="mt-1.5 text-sm font-bold text-slate-900">{{ course.title }}</h2>
-              <p class="mt-0.5 line-clamp-2 text-xs text-slate-500">
-                {{ course.description || 'Tidak ada deskripsi singkat.' }}
-              </p>
-            </div>
-            <ChevronRight class="mt-1 h-5 w-5 shrink-0 text-slate-300" />
-          </div>
-
-          <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-            <span class="inline-flex items-center gap-1">
-              <BookOpen class="h-3.5 w-3.5 text-primary" />
-              {{ course.teacherName || 'Guru Pengampu' }}
-            </span>
-            <span v-if="course.schedule" class="inline-flex items-center gap-1">
-              <Clock class="h-3.5 w-3.5 text-slate-400" />
-              {{ course.schedule }}
-            </span>
-            <span v-if="course.studentCount" class="inline-flex items-center gap-1">
-              <Users class="h-3.5 w-3.5 text-slate-400" />
-              {{ course.studentCount }} Siswa
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Sheet Create Course (Teacher/Admin) -->
-    <div
-      v-if="showCreateModal"
-      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 backdrop-blur-xs"
-      @click.self="showCreateModal = false"
-    >
-      <div class="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl">
-        <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-base font-bold text-slate-900">Buat Kursus Baru</h3>
-          <button type="button" class="text-slate-400" @click="showCreateModal = false">
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-
-        <form class="space-y-3" @submit.prevent="handleCreateCourse">
+      <template v-else>
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
-            v-model="newCourse.title"
-            type="text"
-            placeholder="Judul Mata Pelajaran"
-            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
-            required
+            v-model="search"
+            type="search"
+            placeholder="Cari mata pelajaran atau kode..."
+            class="min-h-[42px] w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 shadow-xs focus:border-primary focus:outline-none"
+            @input="loadCourses(true)"
           />
-          <div class="grid grid-cols-2 gap-2">
-            <input
-              v-model="newCourse.code"
-              type="text"
-              placeholder="Kode (cth: FIS-11A)"
-              class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
-            />
-            <input
-              v-model="newCourse.schedule"
-              type="text"
-              placeholder="Jadwal (cth: Selasa 08:00)"
-              class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
-            />
-          </div>
-          <textarea
-            v-model="newCourse.description"
-            rows="2"
-            placeholder="Deskripsi singkat silabus..."
-            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"
-          />
+        </div>
+
+        <div v-if="isLoading" class="space-y-2.5">
+          <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-xl bg-slate-200" />
+        </div>
+
+        <EmptyState
+          v-else-if="courses.length === 0"
+          title="Belum Ada Mata Pelajaran"
+          subtitle="Daftar mata pelajaran akan muncul di sini."
+        />
+
+        <div v-else class="space-y-2.5">
           <button
-            type="submit"
-            class="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white"
+            v-for="course in courses"
+            :key="course.id"
+            v-memo="[course.id]"
+            type="button"
+            class="touch-card w-full cursor-pointer rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xs hover:border-primary"
+            @click="router.push(`/lms/${course.id}`)"
           >
-            Simpan Kursus
+            <div class="flex items-center justify-between gap-2.5">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary">
+                <BookOpen class="h-4 w-4" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                    {{ course.code || 'COURSE' }}
+                  </span>
+                  <span v-if="course.studentCount" class="inline-flex items-center gap-0.5 text-[10px] text-slate-500">
+                    <Users class="h-3 w-3" /> {{ course.studentCount }}
+                  </span>
+                </div>
+                <h2 class="mt-0.5 truncate text-[13px] font-bold text-slate-900">{{ course.title }}</h2>
+                <div class="mt-0.5 flex items-center gap-2 truncate text-[11px] text-slate-600">
+                  <span class="truncate">{{ course.teacherName || 'Guru Pengampu' }}</span>
+                  <span v-if="course.schedule" class="inline-flex shrink-0 items-center gap-0.5 text-slate-500">
+                    &bull; <Clock class="h-3 w-3" /> {{ course.schedule }}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight class="h-4 w-4 shrink-0 text-slate-400" />
+            </div>
           </button>
-        </form>
-      </div>
+        </div>
+      </template>
     </div>
   </MobileShell>
 </template>

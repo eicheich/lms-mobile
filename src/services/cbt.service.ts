@@ -4,29 +4,46 @@ import type {
   CBTExam,
   CBTExamResult,
   CBTSubmitAnswersPayload,
-  QuestionBank,
+  PaginatedResponse,
+  PaginationQuery,
+  ReportCard,
   StudentGrade
 } from '@/types/api.types'
 import {
   mockExamQuestions,
   mockExams,
-  mockQuestionBanks,
+  mockReportCards,
   mockStudentGrades
 } from '@/utils/mockData'
 
-function isOfflineOrDemo(err: unknown): boolean {
+function shouldFallback(err: unknown): boolean {
   const apiErr = err as ApiError
   if (apiErr?.isModuleLocked) return false
-  return !apiErr?.status || !!apiErr?.isNetworkError
+  return !apiErr?.status || !!apiErr?.isNetworkError || apiErr.status === 404
+}
+
+function toPaginated<T>(raw: any, page = 1, limit = 20): PaginatedResponse<T> {
+  if (raw && Array.isArray(raw.items)) return raw as PaginatedResponse<T>
+  const list: T[] = Array.isArray(raw) ? raw : raw?.data || []
+  return {
+    items: list,
+    total: list.length,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(list.length / limit))
+  }
 }
 
 export const cbtService = {
-  async getExams(): Promise<CBTExam[]> {
+  async getExams(query: PaginationQuery = {}): Promise<PaginatedResponse<CBTExam>> {
+    const { page = 1, limit = 20, search } = query
     try {
-      const { data } = await apiClient.get('/cbt/exams')
-      return Array.isArray(data) ? data : data.data || []
+      const { data } = await apiClient.get('/cbt/exams', {
+        params: { page, limit, search: search || undefined }
+      })
+      return toPaginated<CBTExam>(data, page, limit)
     } catch (err) {
-      if (isOfflineOrDemo(err)) return mockExams
+      if (shouldFallback(err)) return toPaginated<CBTExam>(mockExams, page, limit)
       throw err
     }
   },
@@ -34,9 +51,15 @@ export const cbtService = {
   async startAttempt(examId: string): Promise<CBTAttemptSession> {
     try {
       const { data } = await apiClient.post<CBTAttemptSession>(`/cbt/exams/${examId}/start`)
-      return data
+      return {
+        ...data,
+        questions: (data.questions || []).map((q: any) => ({
+          ...q,
+          text: q.text || q.prompt || ''
+        }))
+      }
     } catch (err) {
-      if (isOfflineOrDemo(err)) {
+      if (shouldFallback(err)) {
         const exam = mockExams.find((e) => e.id === examId) || mockExams[0]
         return {
           attemptId: `att-${Date.now()}`,
@@ -61,7 +84,7 @@ export const cbtService = {
       )
       return data
     } catch (err) {
-      if (isOfflineOrDemo(err)) {
+      if (shouldFallback(err)) {
         const total = Object.keys(payload.answers).length
         const correct = Math.max(1, Math.min(total, Math.ceil(total * 0.8)))
         const score = total === 0 ? 0 : Math.round((correct / 4) * 100)
@@ -83,19 +106,64 @@ export const cbtService = {
       const { data } = await apiClient.get(`/cbt/students/${studentId}/grades`, {
         params: courseId ? { courseId } : undefined
       })
-      return Array.isArray(data) ? data : data.data || []
+      return Array.isArray(data) ? data : data?.items || data?.data || []
     } catch (err) {
-      if (isOfflineOrDemo(err)) return mockStudentGrades
+      if (shouldFallback(err)) return mockStudentGrades
       throw err
     }
   },
 
-  async getQuestionBanks(): Promise<QuestionBank[]> {
+  async getMyReportCards(): Promise<ReportCard[]> {
     try {
-      const { data } = await apiClient.get('/cbt/question-banks')
-      return Array.isArray(data) ? data : data.data || []
+      const { data } = await apiClient.get('/cbt/report-cards/my')
+      return Array.isArray(data) ? data : data?.items || data?.data || []
     } catch (err) {
-      if (isOfflineOrDemo(err)) return mockQuestionBanks
+      if (shouldFallback(err)) return mockReportCards.slice(0, 1)
+      throw err
+    }
+  },
+
+  async getChildrenReportCards(studentId?: string): Promise<ReportCard[]> {
+    try {
+      const { data } = await apiClient.get('/cbt/report-cards/children', {
+        params: studentId ? { studentId } : undefined
+      })
+      return Array.isArray(data) ? data : data?.items || data?.data || []
+    } catch (err) {
+      if (shouldFallback(err)) {
+        return studentId
+          ? mockReportCards.filter((r) => r.studentId === studentId)
+          : mockReportCards.slice(0, 1)
+      }
+      throw err
+    }
+  },
+
+  async getSchoolReportCards(
+    query: PaginationQuery & { status?: string; academicYear?: string } = {}
+  ): Promise<PaginatedResponse<ReportCard>> {
+    const { page = 1, limit = 20, search, status, academicYear } = query
+    try {
+      const { data } = await apiClient.get('/cbt/report-cards', {
+        params: {
+          page,
+          limit,
+          search: search || undefined,
+          status: status || undefined,
+          academicYear: academicYear || undefined
+        }
+      })
+      return toPaginated<ReportCard>(data, page, limit)
+    } catch (err) {
+      if (shouldFallback(err)) {
+        const filtered = mockReportCards.filter(
+          (r) =>
+            (!search ||
+              (r.studentName || '').toLowerCase().includes(search.toLowerCase())) &&
+            (!status || r.status === status)
+        )
+        return toPaginated<ReportCard>(filtered, page, limit)
+      }
       throw err
     }
   }

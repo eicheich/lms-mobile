@@ -5,12 +5,6 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/school-select',
-      name: 'school-select',
-      component: () => import('@/views/auth/SchoolSelectView.vue'),
-      meta: { public: true }
-    },
-    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/auth/LoginView.vue'),
@@ -20,6 +14,16 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('@/views/tabs/HomeView.vue')
+    },
+    {
+      path: '/attendance',
+      name: 'attendance',
+      component: () => import('@/views/tabs/AttendanceView.vue')
+    },
+    {
+      path: '/consultations',
+      name: 'consultations',
+      component: () => import('@/views/tabs/ConsultationsView.vue')
     },
     {
       path: '/lms',
@@ -55,6 +59,10 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/tabs/ProfileView.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
 })

@@ -1,16 +1,20 @@
 import type {
+  AcademicClass,
   AppHomeLayout,
   Assignment,
   AssignmentSubmission,
+  AttendanceRecord,
   AuthUser,
   CBTExam,
   CBTQuestion,
+  ChildAttendanceGroup,
+  ClassAttendanceOverview,
   ConsultationItem,
   Country,
   Course,
   CourseMaterial,
   GlobalProgram,
-  QuestionBank,
+  ReportCard,
   Scholarship,
   SduiBlock,
   StudentGrade,
@@ -62,6 +66,20 @@ export const mockSeedUsers: Record<string, AuthUser> = {
     role: 'TEACHER',
     tenantId: '11111111-1111-1111-1111-111111111111'
   },
+  COUNSELOR: {
+    id: 'cns-farida-01',
+    email: 'bk@aliman.sch.id',
+    fullName: 'Ustadzah Farida Rahma, M.Psi.',
+    role: 'COUNSELOR',
+    tenantId: '11111111-1111-1111-1111-111111111111'
+  },
+  PRINCIPAL: {
+    id: 'prn-hasan-01',
+    email: 'kepsek@aliman.sch.id',
+    fullName: 'KH. Hasan Basri, M.A.',
+    role: 'PRINCIPAL',
+    tenantId: '11111111-1111-1111-1111-111111111111'
+  },
   SCHOOL_ADMIN: {
     id: 'adm-abdullah-01',
     email: 'admin@aliman.sch.id',
@@ -89,10 +107,10 @@ export const mockHomeLayout: AppHomeLayout = {
 }
 
 export const mockCountries: Country[] = [
-  { id: 'c1', name: 'United Kingdom', code: 'UK', flagEmoji: '🇬🇧', description: 'Pusat riset & beasiswa Chevening', popularCount: 14 },
-  { id: 'c2', name: 'Japan', code: 'JP', flagEmoji: '🇯🇵', description: 'Teknologi, robotika & MEXT Scholarship', popularCount: 11 },
-  { id: 'c3', name: 'Egypt (Al-Azhar)', code: 'EG', flagEmoji: '🇪🇬', description: 'Studi Keislaman & Bahasa Arab klasik', popularCount: 22 },
-  { id: 'c4', name: 'Turkey', code: 'TR', flagEmoji: '🇹🇷', description: 'Turkiye Burslari untuk Sains & Humaniora', popularCount: 9 }
+  { id: 'c1', name: 'United Kingdom', code: 'UK', description: 'Pusat riset & beasiswa Chevening', popularCount: 14 },
+  { id: 'c2', name: 'Japan', code: 'JP', description: 'Teknologi, robotika & MEXT Scholarship', popularCount: 11 },
+  { id: 'c3', name: 'Egypt (Al-Azhar)', code: 'EG', description: 'Studi Keislaman & Bahasa Arab klasik', popularCount: 22 },
+  { id: 'c4', name: 'Turkey', code: 'TR', description: 'Turkiye Burslari untuk Sains & Humaniora', popularCount: 9 }
 ]
 
 export const mockUniversities: University[] = [
@@ -140,6 +158,7 @@ export const mockPrograms: GlobalProgram[] = [
     duration: '14 Hari',
     location: 'London & Oxford, UK',
     category: 'STEM Immersion',
+    status: 'PUBLISHED',
     featured: true
   },
   {
@@ -149,7 +168,7 @@ export const mockPrograms: GlobalProgram[] = [
     duration: '21 Hari',
     location: 'Cairo, Mesir',
     category: 'Islamic Studies',
-    tenantSpecific: true
+    status: 'PUBLISHED'
   }
 ]
 
@@ -203,29 +222,6 @@ export const mockProgramBlocks: Record<string, SduiBlock[]> = {
         body: 'Persyaratan utama peserta adalah siswa aktif kelas X–XII dengan nilai Bahasa Inggris minimal 80 serta surat izin orang tua. Kuota terbatas hanya 25 siswa per gelombang.'
       }
     }
-  ],
-  'prog-cairo-tahfidz': [
-    {
-      id: 'b10',
-      blockType: 'HERO_BLOCK',
-      sortOrder: 1,
-      data: {
-        badgeText: 'Program Khusus Al-Iman',
-        headline: 'Cairo Arabic & Sanad Camp',
-        subheadline: ' akselerasi Bahasa Arab Ma\'had Al-Azhar & persiapan kuliah Timur Tengah.',
-        ctaText: 'Tanya Jadwal via WhatsApp',
-        ctaUrl: '#consult'
-      }
-    },
-    {
-      id: 'b11',
-      blockType: 'RICH_TEXT_BLOCK',
-      sortOrder: 2,
-      data: {
-        alignment: 'left',
-        body: 'Peserta akan tinggal di asrama terpadu dekat Masjid Al-Azhar dengan target hafalan tambahan minimal 3 Juz dan penguasaan Nahwu-Shorof aplikatif.'
-      }
-    }
   ]
 }
 
@@ -268,24 +264,27 @@ export const mockMaterialsByCourse: Record<string, CourseMaterial[]> = {
       id: 'mat-1',
       courseId: 'crs-mtk-x',
       title: 'Modul 1: Konsep Limit & Kekontinuan',
-      type: 'READING',
+      type: 'TEXT',
       content: 'Limit fungsi f(x) saat x mendekati c menggambarkan nilai pendekatan fungsi. Pastikan memeriksa limit kiri dan limit kanan sebelum menyimpulkan eksistensi limit.',
+      isPublished: true,
       createdAt: '2026-10-01T08:00:00Z'
     },
     {
       id: 'mat-2',
       courseId: 'crs-mtk-x',
       title: 'Slide Pembahasan Turunan Fungsi',
-      type: 'DOCUMENT',
+      type: 'PDF',
       url: 'https://aliman.sch.id/files/turunan-dasar.pdf',
+      isPublished: true,
       createdAt: '2026-10-08T08:00:00Z'
     },
     {
       id: 'mat-3',
       courseId: 'crs-mtk-x',
-      title: 'Video Animasi Visualisasi Integral & Turunan',
+      title: 'Video Visualisasi Turunan & Integral',
       type: 'VIDEO',
       url: 'https://www.youtube.com/watch?v=WUvTyaaNkzM',
+      isPublished: true,
       createdAt: '2026-10-12T08:00:00Z'
     }
   ],
@@ -294,8 +293,9 @@ export const mockMaterialsByCourse: Record<string, CourseMaterial[]> = {
       id: 'mat-4',
       courseId: 'crs-eng-ielts',
       title: 'Panduan IELTS Writing Task 2 Band 7.5+',
-      type: 'READING',
-      content: 'Gunakan struktur 4 paragraf yang jelas: Introduction (paraphrase + thesis), Body 1 (main idea + example), Body 2 (counter/support), dan Conclusion.',
+      type: 'TEXT',
+      content: 'Gunakan struktur 4 paragraf yang jelas: Introduction, Body 1, Body 2, dan Conclusion.',
+      isPublished: true,
       createdAt: '2026-10-05T08:00:00Z'
     }
   ]
@@ -306,10 +306,11 @@ export const mockAssignmentsByCourse: Record<string, Assignment[]> = {
     {
       id: 'asg-1',
       courseId: 'crs-mtk-x',
-      title: 'Latihan Soal Aplikasi Turunan (Maksimum-Minimum)',
+      title: 'Latihan Soal Aplikasi Turunan',
       instructions: 'Kerjakan 5 soal optimasi pada modul halaman 14, lalu ketik ringkasan langkah pengerjaan atau lampirkan tautan PDF jawaban Anda.',
       dueDate: '2026-11-25T16:59:00Z',
       totalPoints: 100,
+      isPublished: true,
       courseTitle: 'Matematika Peminatan'
     }
   ],
@@ -321,6 +322,7 @@ export const mockAssignmentsByCourse: Record<string, Assignment[]> = {
       instructions: 'Tulis esai minimal 250 kata mengenai peran teknologi digital di pesantren modern.',
       dueDate: '2026-11-22T16:59:00Z',
       totalPoints: 100,
+      isPublished: true,
       courseTitle: 'Academic English'
     }
   ]
@@ -333,10 +335,11 @@ export const mockSubmissionsByAssignment: Record<string, AssignmentSubmission[]>
       assignmentId: 'asg-1',
       studentId: 'stu-rayhan-01',
       studentName: 'Muhammad Rayhan Pratama',
-      content: 'Untuk soal no 1, fungsi luas L(x) = x(40 - 2x), turunan pertama L\'(x) = 40 - 4x = 0 sehingga x = 10 cm dan luas maksimum 200 cm2.',
+      status: 'GRADED',
+      content: 'Untuk soal no 1, fungsi luas L(x) = x(40 - 2x), L\'(x) = 40 - 4x = 0 sehingga x = 10 cm dan luas maksimum 200 cm2.',
       fileUrl: 'https://storage.aliman.sch.id/submissions/rayhan-turunan.pdf',
       score: 92,
-      feedback: 'Langkah penurunan sangat rapi dan tepat. Pertahankan!',
+      feedback: 'Langkah penurunan sangat rapi dan tepat.',
       submittedAt: '2026-11-15T09:30:00Z'
     },
     {
@@ -344,11 +347,23 @@ export const mockSubmissionsByAssignment: Record<string, AssignmentSubmission[]>
       assignmentId: 'asg-1',
       studentId: 'stu-salma-02',
       studentName: 'Salma Nur Azizah',
+      status: 'SUBMITTED',
       content: 'Jawaban terlampir dalam dokumen PDF lengkap dengan grafik titik stasioner.',
       fileUrl: 'https://storage.aliman.sch.id/submissions/salma-turunan.pdf',
       score: null,
       feedback: null,
       submittedAt: '2026-11-16T04:10:00Z'
+    },
+    {
+      id: 'sub-3',
+      assignmentId: 'asg-1',
+      studentId: 'stu-farhan-03',
+      studentName: 'Ahmad Farhan Kamil',
+      status: 'LATE',
+      content: 'Maaf terlambat mengumpulkan, jawaban sudah dilampirkan.',
+      score: null,
+      feedback: null,
+      submittedAt: '2026-11-17T10:10:00Z'
     }
   ]
 }
@@ -361,7 +376,7 @@ export const mockExams: CBTExam[] = [
     durationMinutes: 20,
     totalQuestions: 4,
     passingScore: 75,
-    status: 'ACTIVE',
+    status: 'ONGOING',
     startTime: '2026-11-17T01:00:00Z',
     endTime: '2026-11-30T16:00:00Z'
   },
@@ -372,7 +387,7 @@ export const mockExams: CBTExam[] = [
     durationMinutes: 30,
     totalQuestions: 3,
     passingScore: 70,
-    status: 'SCHEDULED',
+    status: 'PUBLISHED',
     startTime: '2026-11-20T01:00:00Z',
     endTime: '2026-12-05T16:00:00Z'
   }
@@ -424,41 +439,6 @@ export const mockExamQuestions: Record<string, CBTQuestion[]> = {
         { key: 'D', text: '6' }
       ]
     }
-  ],
-  'exam-eng-mock': [
-    {
-      id: 'qe1',
-      order: 1,
-      text: 'Which word is closest in meaning to "ubiquitous" in academic texts?',
-      options: [
-        { key: 'A', text: 'Rare' },
-        { key: 'B', text: 'Omnipresent' },
-        { key: 'C', text: 'Temporary' },
-        { key: 'D', text: 'Complex' }
-      ]
-    },
-    {
-      id: 'qe2',
-      order: 2,
-      text: 'In IELTS Task 2, a clear thesis statement should appear in...',
-      options: [
-        { key: 'A', text: 'The introduction paragraph' },
-        { key: 'B', text: 'Only the second body paragraph' },
-        { key: 'C', text: 'As a bullet list at the end' },
-        { key: 'D', text: 'Nowhere in the essay' }
-      ]
-    },
-    {
-      id: 'qe3',
-      order: 3,
-      text: 'Choose the grammatically correct sentence:',
-      options: [
-        { key: 'A', text: 'Neither the teacher nor the students was late.' },
-        { key: 'B', text: 'Neither the teacher nor the students were late.' },
-        { key: 'C', text: 'Neither the teacher or the students were late.' },
-        { key: 'D', text: 'Neither the teacher nor the students is late.' }
-      ]
-    }
   ]
 }
 
@@ -486,9 +466,130 @@ export const mockStudentGrades: StudentGrade[] = [
   }
 ]
 
-export const mockQuestionBanks: QuestionBank[] = [
-  { id: 'qb1', title: 'Bank Soal Kalkulus Kelas XI', subject: 'Matematika', questionCount: 45, isGlobal: false },
-  { id: 'qb2', title: 'Template Soal IELTS Academic', subject: 'Bahasa Inggris', questionCount: 120, isGlobal: true }
+export const mockReportCards: ReportCard[] = [
+  {
+    id: 'rc-1',
+    studentId: 'stu-rayhan-01',
+    studentName: 'Muhammad Rayhan Pratama',
+    className: 'XI IPA 1',
+    academicYear: '2026/2027',
+    semester: 1,
+    summaryGpa: 3.88,
+    status: 'FINALIZED',
+    finalEvaluation: {
+      sikap: 'Sangat Baik',
+      catatan: 'Konsisten menjaga capaian akademik dan aktif di program persiapan IELTS.'
+    }
+  },
+  {
+    id: 'rc-2',
+    studentId: 'stu-salma-02',
+    studentName: 'Salma Nur Azizah',
+    className: 'XI IPA 1',
+    academicYear: '2026/2027',
+    semester: 1,
+    summaryGpa: 3.92,
+    status: 'FINALIZED',
+    finalEvaluation: {
+      sikap: 'Sangat Baik',
+      catatan: 'Memiliki ketelitian tinggi pada mata pelajaran eksakta.'
+    }
+  }
+]
+
+export const mockAcademicClasses: AcademicClass[] = [
+  {
+    id: 'cls-xi-ipa-1',
+    name: 'XI IPA 1',
+    gradeLevel: 'Kelas 11',
+    studentCount: 4,
+    students: [
+      { id: 'stu-rayhan-01', fullName: 'Muhammad Rayhan Pratama', nis: '2025001' },
+      { id: 'stu-salma-02', fullName: 'Salma Nur Azizah', nis: '2025002' },
+      { id: 'stu-farhan-03', fullName: 'Ahmad Farhan Kamil', nis: '2025003' },
+      { id: 'stu-aisyah-04', fullName: 'Aisyah Putri Lestari', nis: '2025004' }
+    ]
+  },
+  {
+    id: 'cls-xii-ipa-1',
+    name: 'XII IPA 1',
+    gradeLevel: 'Kelas 12',
+    studentCount: 3,
+    students: [
+      { id: 'stu-zaid-05', fullName: 'Zaid Abdurrahman', nis: '2024001' },
+      { id: 'stu-nadia-06', fullName: 'Nadia Khairunnisa', nis: '2024002' },
+      { id: 'stu-umar-07', fullName: 'Umar Al-Faruq', nis: '2024003' }
+    ]
+  }
+]
+
+export const mockAttendanceMy: { summary: any; records: AttendanceRecord[] } = {
+  summary: { present: 18, late: 1, sick: 1, permit: 0, absent: 0, total: 20, attendanceRate: 95 },
+  records: [
+    { id: 'att-1', studentId: 'stu-rayhan-01', date: '2026-11-18', sessionType: 'DAILY', status: 'PRESENT' },
+    { id: 'att-2', studentId: 'stu-rayhan-01', date: '2026-11-17', sessionType: 'DAILY', status: 'PRESENT' },
+    { id: 'att-3', studentId: 'stu-rayhan-01', date: '2026-11-16', sessionType: 'DAILY', status: 'LATE', notes: 'Terlambat 10 menit' },
+    { id: 'att-4', studentId: 'stu-rayhan-01', date: '2026-11-15', sessionType: 'DAILY', status: 'SICK', notes: 'Demam ringan' }
+  ]
+}
+
+export const mockAttendanceChildren: ChildAttendanceGroup[] = [
+  {
+    studentId: 'stu-rayhan-01',
+    studentName: 'Muhammad Rayhan Pratama',
+    className: 'XI IPA 1',
+    summary: mockAttendanceMy.summary,
+    records: mockAttendanceMy.records
+  },
+  {
+    studentId: 'stu-hana-08',
+    studentName: 'Hana Azzahra Pratama',
+    className: 'VIII A',
+    summary: { present: 20, late: 0, sick: 0, permit: 0, absent: 0, total: 20, attendanceRate: 100 },
+    records: [
+      { id: 'att-h1', studentId: 'stu-hana-08', date: '2026-11-18', sessionType: 'DAILY', status: 'PRESENT' },
+      { id: 'att-h2', studentId: 'stu-hana-08', date: '2026-11-17', sessionType: 'DAILY', status: 'PRESENT' }
+    ]
+  }
+]
+
+export const mockClassAttendanceOverview: ClassAttendanceOverview[] = [
+  {
+    classId: 'cls-xi-ipa-1',
+    className: 'XI IPA 1',
+    fillStatus: 'COMPLETE',
+    present: 26,
+    late: 1,
+    sick: 1,
+    permit: 0,
+    absent: 0,
+    totalStudents: 28,
+    attendanceRate: 96
+  },
+  {
+    classId: 'cls-xii-ipa-1',
+    className: 'XII IPA 1',
+    fillStatus: 'PARTIAL',
+    present: 20,
+    late: 2,
+    sick: 0,
+    permit: 1,
+    absent: 2,
+    totalStudents: 28,
+    attendanceRate: 88
+  },
+  {
+    classId: 'cls-x-ipa-2',
+    className: 'X IPA 2',
+    fillStatus: 'EMPTY',
+    present: 0,
+    late: 0,
+    sick: 0,
+    permit: 0,
+    absent: 0,
+    totalStudents: 30,
+    attendanceRate: 0
+  }
 ]
 
 export const mockConsultations: ConsultationItem[] = [
@@ -500,8 +601,20 @@ export const mockConsultations: ConsultationItem[] = [
     destinationCountry: 'United Kingdom',
     intendedMajor: 'Computer Science',
     notes: 'Persiapan IELTS & Beasiswa BIM 2027',
-    whatsappUrl: 'https://wa.me/6281234567890?text=Halo%20Konselor%20Al-Iman',
+    whatsappUrl: 'https://wa.me/6281234567890?text=Halo%20Rayhan%2C%20terkait%20konsultasi%20studi%20UK',
     status: 'SCHEDULED',
     createdAt: '2026-11-10T07:00:00Z'
+  },
+  {
+    id: 'con-2',
+    name: 'Salma Nur Azizah',
+    phone: '6281298765432',
+    email: 'salma@aliman.sch.id',
+    destinationCountry: 'Japan',
+    intendedMajor: 'Biomedical Engineering',
+    notes: 'Tanya syarat MEXT Undergraduate',
+    whatsappUrl: 'https://wa.me/6281298765432?text=Halo%20Salma%2C%20terkait%20beasiswa%20MEXT',
+    status: 'PENDING',
+    createdAt: '2026-11-17T03:30:00Z'
   }
 ]

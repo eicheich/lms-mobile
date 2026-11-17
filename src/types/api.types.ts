@@ -2,10 +2,27 @@ export type UserRole =
   | 'STUDENT'
   | 'PARENT'
   | 'TEACHER'
-  | 'SCHOOL_ADMIN'
-  | 'PRINCIPAL'
   | 'COUNSELOR'
+  | 'PRINCIPAL'
+  | 'SCHOOL_ADMIN'
   | 'SUPER_OWNER'
+
+export interface PaginationQuery {
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: string
+  sortOrder?: 'ASC' | 'DESC'
+  mine?: boolean
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
 
 export interface TenantBranding {
   tenantId: string
@@ -49,7 +66,7 @@ export interface AppHomeLayout {
   }
 }
 
-// Server-Driven UI (SDUI) Types
+// Server-Driven UI (SDUI)
 export type SduiBlockType =
   | 'HERO_BLOCK'
   | 'STATS_BLOCK'
@@ -65,27 +82,14 @@ export interface HeroBlockData {
   badgeText?: string
 }
 
-export interface StatItem {
-  value: string
-  label: string
-  description?: string
-}
-
 export interface StatsBlockData {
   title?: string
-  items: StatItem[]
-}
-
-export interface IconGridItem {
-  icon: string
-  title: string
-  description: string
-  actionUrl?: string
+  items: { value: string; label: string; description?: string }[]
 }
 
 export interface IconGridBlockData {
   title?: string
-  items: IconGridItem[]
+  items: { icon: string; title: string; description: string; actionUrl?: string }[]
 }
 
 export interface RichTextBlockData {
@@ -103,12 +107,11 @@ export interface SduiBlock<T = any> {
   schemaVersion?: number
 }
 
-// Global & Career Hub Models
+// Global & Career Hub
 export interface Country {
   id: string
   name: string
   code: string
-  flagEmoji?: string
   description?: string
   popularCount?: number
 }
@@ -131,7 +134,6 @@ export interface Scholarship {
   deadline?: string
   description?: string
   country?: string
-  eligibility?: string
 }
 
 export interface GlobalProgram {
@@ -141,9 +143,8 @@ export interface GlobalProgram {
   duration?: string
   location?: string
   category?: string
-  bannerUrl?: string
+  status?: string
   featured?: boolean
-  tenantSpecific?: boolean
 }
 
 export interface ConsultationRequestPayload {
@@ -169,10 +170,11 @@ export interface ConsultationItem {
   createdAt: string
 }
 
-// LMS Models
+// LMS
 export interface Course {
   id: string
   title: string
+  name?: string
   code?: string
   teacherName?: string
   description?: string
@@ -185,9 +187,12 @@ export interface CourseMaterial {
   id: string
   courseId: string
   title: string
-  type: 'DOCUMENT' | 'VIDEO' | 'READING' | 'LINK' | string
+  type: 'TEXT' | 'VIDEO' | 'PDF' | 'LINK' | 'DOCUMENT' | 'READING' | string
   url?: string
+  fileUrl?: string
   content?: string
+  contentBody?: string
+  isPublished?: boolean
   createdAt?: string
 }
 
@@ -195,17 +200,23 @@ export interface Assignment {
   id: string
   courseId: string
   title: string
-  instructions: string
+  instructions?: string
+  description?: string
   dueDate: string
   totalPoints?: number
+  maxScore?: number
+  isPublished?: boolean
   courseTitle?: string
 }
+
+export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'LATE'
 
 export interface AssignmentSubmission {
   id: string
   assignmentId: string
   studentId: string
   studentName?: string
+  status?: SubmissionStatus | string
   content?: string
   fileUrl?: string
   score?: number | null
@@ -223,7 +234,7 @@ export interface GradeSubmissionPayload {
   feedback?: string
 }
 
-// CBT Models
+// CBT & Report Cards
 export interface QuestionOption {
   key: string
   text: string
@@ -232,16 +243,9 @@ export interface QuestionOption {
 export interface CBTQuestion {
   id: string
   text: string
+  prompt?: string
   options: QuestionOption[]
   order?: number
-}
-
-export interface QuestionBank {
-  id: string
-  title: string
-  subject?: string
-  questionCount?: number
-  isGlobal?: boolean
 }
 
 export interface CBTExam {
@@ -253,7 +257,7 @@ export interface CBTExam {
   startTime?: string
   endTime?: string
   passingScore?: number
-  status?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | string
+  status?: 'PUBLISHED' | 'ONGOING' | 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | string
 }
 
 export interface CBTAttemptSession {
@@ -283,4 +287,85 @@ export interface StudentGrade {
   assignmentsAverage?: number
   examScores?: { examTitle: string; score: number }[]
   finalGrade?: string | number
+}
+
+export interface ReportCard {
+  id: string
+  studentId: string
+  studentName?: string
+  className?: string
+  academicYear: string
+  semester: number
+  summaryGpa?: number
+  status: 'DRAFT' | 'FINALIZED' | string
+  finalEvaluation?: {
+    sikap?: string
+    catatan?: string
+  }
+}
+
+// Attendance
+export type AttendanceStatus = 'PRESENT' | 'LATE' | 'SICK' | 'PERMIT' | 'ABSENT'
+export type AttendanceSessionType = 'DAILY' | 'SUBJECT'
+
+export interface AcademicClass {
+  id: string
+  name: string
+  gradeLevel?: string
+  studentCount?: number
+  students?: { id: string; fullName: string; nis?: string }[]
+}
+
+export interface AttendanceRecord {
+  id: string
+  studentId: string
+  studentName?: string
+  classId?: string
+  className?: string
+  date: string
+  sessionType?: AttendanceSessionType
+  status: AttendanceStatus | null
+  notes?: string
+}
+
+export interface AttendanceSummary {
+  present: number
+  late: number
+  sick: number
+  permit: number
+  absent: number
+  total: number
+  attendanceRate: number
+}
+
+export interface ChildAttendanceGroup {
+  studentId: string
+  studentName: string
+  className: string
+  summary: AttendanceSummary
+  records: AttendanceRecord[]
+}
+
+export interface ClassAttendanceOverview {
+  classId: string
+  className: string
+  fillStatus: 'COMPLETE' | 'PARTIAL' | 'EMPTY'
+  present: number
+  late: number
+  sick: number
+  permit: number
+  absent: number
+  totalStudents: number
+  attendanceRate: number
+}
+
+export interface BulkAttendancePayload {
+  classId: string
+  date: string
+  sessionType: AttendanceSessionType
+  records: Array<{
+    studentId: string
+    status: AttendanceStatus
+    notes?: string
+  }>
 }

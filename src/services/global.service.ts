@@ -5,6 +5,8 @@ import type {
   ConsultationRequestPayload,
   Country,
   GlobalProgram,
+  PaginatedResponse,
+  PaginationQuery,
   Scholarship,
   SduiBlock,
   University
@@ -19,15 +21,16 @@ import {
   mockUniversities
 } from '@/utils/mockData'
 
-function unwrapList<T>(res: unknown): T[] {
-  if (Array.isArray(res)) return res as T[]
-  if (res && typeof res === 'object' && 'data' in res && Array.isArray((res as any).data)) {
-    return (res as any).data as T[]
+function toPaginated<T>(raw: any, page = 1, limit = 20): PaginatedResponse<T> {
+  if (raw && Array.isArray(raw.items)) return raw as PaginatedResponse<T>
+  const list: T[] = Array.isArray(raw) ? raw : raw?.data || []
+  return {
+    items: list,
+    total: list.length,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(list.length / limit))
   }
-  if (res && typeof res === 'object' && 'items' in res && Array.isArray((res as any).items)) {
-    return (res as any).items as T[]
-  }
-  return []
 }
 
 export const globalService = {
@@ -47,9 +50,9 @@ export const globalService = {
   async getCountries(search?: string): Promise<Country[]> {
     try {
       const { data } = await apiClient.get('/global/countries', {
-        params: search ? { search } : undefined
+        params: { page: 1, limit: 30, search: search || undefined }
       })
-      return unwrapList<Country>(data)
+      return toPaginated<Country>(data).items
     } catch {
       return mockCountries.filter(
         (c) => !search || c.name.toLowerCase().includes(search.toLowerCase())
@@ -60,9 +63,9 @@ export const globalService = {
   async getUniversities(search?: string): Promise<University[]> {
     try {
       const { data } = await apiClient.get('/global/universities', {
-        params: search ? { search } : undefined
+        params: { page: 1, limit: 20, search: search || undefined }
       })
-      return unwrapList<University>(data)
+      return toPaginated<University>(data).items
     } catch {
       return mockUniversities.filter(
         (u) =>
@@ -76,9 +79,9 @@ export const globalService = {
   async getScholarships(search?: string): Promise<Scholarship[]> {
     try {
       const { data } = await apiClient.get('/global/scholarships', {
-        params: search ? { search } : undefined
+        params: { page: 1, limit: 20, search: search || undefined }
       })
-      return unwrapList<Scholarship>(data)
+      return toPaginated<Scholarship>(data).items
     } catch {
       return mockScholarships.filter(
         (s) => !search || s.name.toLowerCase().includes(search.toLowerCase())
@@ -88,8 +91,10 @@ export const globalService = {
 
   async getPrograms(): Promise<GlobalProgram[]> {
     try {
-      const { data } = await apiClient.get('/global/programs')
-      return unwrapList<GlobalProgram>(data)
+      const { data } = await apiClient.get('/global/programs', {
+        params: { page: 1, limit: 20 }
+      })
+      return toPaginated<GlobalProgram>(data).items
     } catch {
       return mockPrograms
     }
@@ -107,7 +112,7 @@ export const globalService = {
   async getProgramBlocks(id: string): Promise<SduiBlock[]> {
     try {
       const { data } = await apiClient.get<SduiBlock[]>(`/global/programs/${id}/blocks`)
-      const list = unwrapList<SduiBlock>(data)
+      const list = toPaginated<SduiBlock>(data).items
       return [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     } catch {
       return mockProgramBlocks[id] || mockProgramBlocks['prog-uk-immersion'] || []
@@ -137,9 +142,37 @@ export const globalService = {
   async getMyConsultations(): Promise<ConsultationItem[]> {
     try {
       const { data } = await apiClient.get('/global/consultations/my')
-      return unwrapList<ConsultationItem>(data)
+      return toPaginated<ConsultationItem>(data).items
     } catch {
       return mockConsultations
+    }
+  },
+
+  async getAllConsultations(
+    query: PaginationQuery & { status?: string; destinationCountry?: string } = {}
+  ): Promise<PaginatedResponse<ConsultationItem>> {
+    const { page = 1, limit = 20, search, status, destinationCountry } = query
+    try {
+      const { data } = await apiClient.get('/global/consultations', {
+        params: {
+          page,
+          limit,
+          search: search || undefined,
+          status: status || undefined,
+          destinationCountry: destinationCountry || undefined
+        }
+      })
+      return toPaginated<ConsultationItem>(data, page, limit)
+    } catch {
+      const filtered = mockConsultations.filter(
+        (c) =>
+          (!search ||
+            c.name.toLowerCase().includes(search.toLowerCase()) ||
+            c.intendedMajor.toLowerCase().includes(search.toLowerCase())) &&
+          (!status || c.status === status) &&
+          (!destinationCountry || c.destinationCountry === destinationCountry)
+      )
+      return toPaginated<ConsultationItem>(filtered, page, limit)
     }
   }
 }

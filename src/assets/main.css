@@ -12,13 +12,14 @@
 html,
 body {
   height: 100%;
+  font-size: 14px;
   overscroll-behavior-y: contain;
   -webkit-tap-highlight-color: transparent;
   font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .safe-top {
-  padding-top: var(--sat);
+  padding-top: calc(var(--sat) + 0.625rem);
 }
 
 .safe-bottom {
@@ -34,8 +35,16 @@ body {
 }
 
 .touch-card {
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition: transform 140ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 .touch-card:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-card,
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

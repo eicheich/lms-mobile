@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTenantStore } from '@/stores/tenant'
-import { ArrowLeft, Eye, EyeOff, LogIn, Sparkles } from 'lucide-vue-next'
+import { Eye, EyeOff, LogIn } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -13,17 +13,6 @@ const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const errorMsg = ref('')
-
-const demoAccounts: Array<{
-  role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'SCHOOL_ADMIN'
-  label: string
-  email: string
-}> = [
-  { role: 'STUDENT', label: 'Siswa (Rayhan)', email: 'rayhan@aliman.sch.id' },
-  { role: 'PARENT', label: 'Orang Tua', email: 'bapak.rayhan@gmail.com' },
-  { role: 'TEACHER', label: 'Guru (Ust. Mansur)', email: 'ustadz.mansur@aliman.sch.id' },
-  { role: 'SCHOOL_ADMIN', label: 'Admin Sekolah', email: 'admin@aliman.sch.id' }
-]
 
 async function handleLogin() {
   errorMsg.value = ''
@@ -35,17 +24,7 @@ async function handleLogin() {
     })
     router.replace('/')
   } catch (err: any) {
-    errorMsg.value = err.message || 'Gagal masuk.'
-  }
-}
-
-async function handleDemo(role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'SCHOOL_ADMIN') {
-  errorMsg.value = ''
-  try {
-    await authStore.quickDemoLogin(role, tenantStore.tenantSlug)
-    router.replace('/')
-  } catch (err: any) {
-    errorMsg.value = err.message || 'Gagal masuk akun demo.'
+    errorMsg.value = err.message || 'Email atau password tidak valid.'
   }
 }
 </script>
@@ -54,51 +33,79 @@ async function handleDemo(role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'SCHOOL_ADMIN
   <div class="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50 shadow-xl">
     <!-- Top Banner -->
     <div
-      class="safe-top rounded-b-[2rem] px-6 pb-8 pt-6 text-white shadow-md"
+      class="safe-top rounded-b-3xl px-5 pb-6 pt-5 text-white shadow-sm"
       :style="{
-        background: 'linear-gradient(135deg, var(--color-primary, #059669), var(--color-secondary, #0284c7))'
+        background:
+          'linear-gradient(135deg, var(--color-primary, #059669) 0%, color-mix(in srgb, var(--color-primary, #059669) 70%, #0f172a) 100%)'
       }"
     >
-      <button
-        type="button"
-        class="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-sm"
-        @click="router.push('/school-select')"
-      >
-        <ArrowLeft class="h-3.5 w-3.5" />
-        <span>Ganti Sekolah ({{ tenantStore.tenantSlug }})</span>
-      </button>
-
-      <h1 class="text-2xl font-extrabold">{{ tenantStore.branding.appName }}</h1>
-      <p class="mt-0.5 text-xs text-white/90">{{ tenantStore.branding.schoolName }}</p>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-sm font-extrabold uppercase backdrop-blur-sm"
+        >
+          <img
+            v-if="tenantStore.branding.logoUrl"
+            :src="tenantStore.branding.logoUrl"
+            alt="Logo Sekolah"
+            class="h-full w-full rounded-xl object-cover"
+          />
+          <span v-else>{{ tenantStore.branding.schoolName.slice(0, 2) }}</span>
+        </div>
+        <div class="min-w-0">
+          <h1 class="truncate text-lg font-extrabold leading-tight">
+            {{ tenantStore.branding.appName }}
+          </h1>
+          <p class="truncate text-xs text-white/90">{{ tenantStore.branding.schoolName }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- Login Card -->
-    <div class="flex-1 space-y-5 px-5 py-6">
-      <form class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @submit.prevent="handleLogin">
+    <div class="flex flex-1 flex-col justify-center px-4 py-6">
+      <form
+        class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
+        @submit.prevent="handleLogin"
+      >
         <div>
-          <label class="mb-1 block text-xs font-bold text-slate-600">Email Sekolah</label>
+          <h2 class="text-[15px] font-bold text-slate-900">Masuk ke Akun</h2>
+          <p class="mt-0.5 text-xs text-slate-600">
+            Gunakan email dan password akun sekolah Anda.
+          </p>
+        </div>
+
+        <div>
+          <label for="login-email" class="mb-1 block text-xs font-bold text-slate-700">
+            Email
+          </label>
           <input
+            id="login-email"
             v-model="email"
             type="email"
+            autocomplete="email"
             placeholder="nama@aliman.sch.id"
-            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary focus:outline-none"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 px-3.5 text-xs text-slate-900 focus:border-primary focus:outline-none"
             required
           />
         </div>
 
         <div>
-          <label class="mb-1 block text-xs font-bold text-slate-600">Password</label>
+          <label for="login-password" class="mb-1 block text-xs font-bold text-slate-700">
+            Password
+          </label>
           <div class="relative">
             <input
+              id="login-password"
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
+              autocomplete="current-password"
               placeholder="••••••••"
-              class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 pr-10 text-sm focus:border-primary focus:outline-none"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 px-3.5 pr-10 text-xs text-slate-900 focus:border-primary focus:outline-none"
               required
             />
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              aria-label="Tampilkan Password"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer p-1.5 text-slate-500"
               @click="showPassword = !showPassword"
             >
               <EyeOff v-if="showPassword" class="h-4 w-4" />
@@ -107,39 +114,19 @@ async function handleDemo(role: 'STUDENT' | 'PARENT' | 'TEACHER' | 'SCHOOL_ADMIN
           </div>
         </div>
 
-        <p v-if="errorMsg" class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600">
+        <p v-if="errorMsg" class="rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
           {{ errorMsg }}
         </p>
 
         <button
           type="submit"
           :disabled="authStore.isLoading"
-          class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-sm active:scale-[0.99] disabled:opacity-60"
+          class="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white shadow-xs transition-colors disabled:opacity-60"
         >
           <LogIn class="h-4 w-4" />
-          <span>{{ authStore.isLoading ? 'Memproses...' : 'Masuk ke Akun' }}</span>
+          <span>{{ authStore.isLoading ? 'Memproses...' : 'Masuk' }}</span>
         </button>
       </form>
-
-      <!-- 1-Tap Seed Accounts -->
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="mb-3 flex items-center gap-1.5 text-xs font-bold text-slate-700">
-          <Sparkles class="h-4 w-4 text-primary" />
-          <span>Uji Cepat Akun Seed (Password: Password123!)</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            v-for="acc in demoAccounts"
-            :key="acc.role"
-            type="button"
-            class="touch-card rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-left hover:border-primary"
-            @click="handleDemo(acc.role)"
-          >
-            <div class="text-xs font-bold text-slate-800">{{ acc.label }}</div>
-            <div class="truncate text-[10px] text-slate-500">{{ acc.email }}</div>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
